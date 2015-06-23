@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8" />
+	<script src="js/jquery-1.10.2.min.js"></script>
+	<style type="text/css">
+		#canvas{
+			background-color: #000;
+		}
+	</style>
+</head>
+<body onkeydown="getCommand()">
+	<canvas id="canvas" width='600' height='500'></canvas>
+	<p id="xy"></p>
+	<script type="text/javascript">
+	var canvas = document.getElementById('canvas');
+	var cxt = canvas.getContext('2d');
+	var heroTankX = 200, heroTankY = 450;
+	var color = [
+		["#ff0","#f90"]
+	];
+		
+
+	var heroTank = new heroTank(heroTankX,heroTankY,color,0,5);
+
+	//初始化坦克
+	drawTank(heroTank);
+
+	function Tank( x,y,color,direction,speed){
+		this.x = x;
+		this.y = y;
+		this.color = color;
+		this.direction = direction;
+		this.speed = speed;
+		this.moveUp = function (){
+			if (this.direction ===0) {
+				if (this.x<0||this.x>550||this.y<=0||this.y>450){
+					return false;
+				}else{
+					this.y -= this.speed ;
+				}
+			}else{
+				this.direction = 0;
+			}
+		};
+		this.moveDown = function (){
+			if (this.direction ===2) {
+				if (this.x<0||this.x>550||this.y<0||this.y>=450){
+					return false;
+				}else{
+					this.y += this.speed ;
+				}
+			}else{
+				this.direction = 2;
+			}
+		};
+		this.moveRight = function (){
+			if (this.direction ===1) {
+				if (this.x<0||this.x>=550||this.y<0||this.y>450){
+					return false;
+				}else{
+					this.x += this.speed ;
+				}
+			}else{
+				this.direction = 1;
+			}
+		};
+		this.moveLeft = function (){
+			if (this.direction ===3) {
+				if (this.x<=0||this.x>550||this.y<0||this.y>450){
+					return false;
+				}else{
+					this.x -= this.speed ;
+				}
+			}else{
+				this.direction = 3;
+			}
+		}
+	}
+	function heroTank( x, y, color, direction, speed){
+		this.tank = Tank;
+		this.tank(x,y,color,direction,speed);
+	}
+	function drawTank(a){
+		switch(a.direction){
+			case 0:
+			case 2:
+				cxt.beginPath();
+				cxt.fillStyle = "#ff0";
+				cxt.fillRect(a.x , a.y, 11, 50);
+				cxt.fillRect(a.x + 12,a.y + 10 ,26,30);
+				cxt.fillRect(a.x + 39 ,a.y,11,50);
+				cxt.fillStyle = "#f90";
+				cxt.arc(a.x + 25,a.y + 25 , 10 ,0 ,2*Math.PI,true);
+				cxt.closePath();
+				cxt.fill();
+				cxt.beginPath();
+				cxt.strokeStyle = "#f90";
+				cxt.moveTo(a.x + 25,a.y + 25);
+				a.direction===0 ? cxt.lineTo(a.x + 25,a.y) : cxt.lineTo(a.x + 25,a.y+50) ;
+				cxt.closePath();
+				cxt.stroke();
+				break;
+			case 1:
+			case 3:
+				cxt.beginPath();
+				cxt.fillStyle = "#ff0";
+				cxt.fillRect(a.x , a.y, 50, 11);
+				cxt.fillRect(a.x + 10,a.y + 12 ,30,26);
+				cxt.fillRect(a.x ,a.y+39,50,11);
+				cxt.fillStyle = "#f90";
+				cxt.arc(a.x + 25,a.y + 25 , 10 ,0 ,2*Math.PI,true);
+				cxt.closePath();
+				cxt.fill();
+				cxt.beginPath();
+				cxt.strokeStyle = "#f90";
+				cxt.moveTo(a.x + 25,a.y + 25);
+				a.direction===1 ? cxt.lineTo(a.x + 50,a.y + 25) : cxt.lineTo(a.x,a.y +25) ;
+				cxt.closePath();
+				cxt.stroke();
+		}
+	}
+
+	function getCommand(){
+		var code = event.keyCode || event.which;
+		switch(code){
+			case 87: //向上w
+				heroTank.moveUp();
+				break;
+			case 68: //向右d
+				heroTank.moveRight();
+				break;
+			case 83: //向下s
+				heroTank.moveDown();
+				break;
+			case 65: //向左a
+				heroTank.moveLeft();
+				break;
+			case 74: //攻击 j
+				attack();
+				break;
+		}
+		//清空画布
+		cxt.clearRect(0,0,600,500);
+		//绘制坦克
+		drawTank(heroTank);
+		document.getElementById('xy').innerHTML=heroTank.x+"/"+heroTank.y;
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+	// //画线
+	// cxt.beginPath();
+	// cxt.moveTo(10,10);
+	// cxt.lineTo(10,30);
+	// cxt.closePath();
+	// cxt.stroke();
+
+	// //画矩形
+	// cxt.fillStyle="#0000ff";
+	// cxt.fillRect(15,15,30,30);
+	// cxt.fill();
+
+	//画圆
+	// cxt.beginPath();
+	// cxt.fillStyle="ff0000";
+	// cxt.arc(100,75,50,0,2*Math.PI,true);
+	// cxt.closePath();
+	// cxt.fill();
+
+	// var arcX=arcY=50;
+	// var c=document.getElementById("canvas");
+	// var ctx=c.getContext("2d");
+
+	// drawArc();
+
+	// function drawArc(){
+	// 	ctx.beginPath();
+	// 	ctx.fillStyle="#345"
+	// 	ctx.arc(arcX,arcY,5,0,2*Math.PI);
+	// 	ctx.closePath();
+	// 	ctx.fill();
+	// }
+
+
+	// function move(){
+	// 	var key = event.keyCode;
+	// 	switch(key){
+	// 		case 87:
+	// 			arcY-=5;
+	// 			break;
+	// 		case 68:
+	// 			arcX+=5;
+	// 			break;
+	// 		case 83:
+	// 			arcY+=5;
+	// 			break;
+	// 		case 65:
+	// 			arcX-=5;
+	// 			break;
+	// 	}
+	// 	ctx.clearRect(0,0,500,500);
+	// 	drawArc();
+	// }
+
+	</script>
+</body>
+</html>

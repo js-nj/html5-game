@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport">
+    <title>HTML5经典坦克大战</title>
+    <script src="js/jquery-1.10.2.min.js"></script>
+    <style type="text/css">
+        body { margin: 0;padding: 0;}
+        .con { margin:0 auto;width: 650px;}
+        .con .tankmap { width:600px; height:500px;background-color:#000;}
+        .con .tips { margin-top:20px;font-weight:bolder;font-size:20px;color:red;}
+    </style>
+</head>
+<body onkeydown="getCommand()">
+    <div class="con">
+        <h1>HTML5——经典坦克大战</h1>
+
+        <canvas id="tankmap" class="tankmap"></canvas>
+        <div class="tips">
+            W、S、A、D分别控制：上、下、左、右；J是发子弹。暂时不支持Firefox浏览器。
+        </div>
+    </div>
+
+    <script>
+        var gameover = false;
+        var verygood = false;
+        var canH = document.getElementById("tankmap");
+        var cxt = canH.getContext("2d");
+
+        var bomb3 = new Image();
+        bomb3.src = "images/bomb_3.gif";
+        var bomb2 = new Image();
+        bomb2.src = "images/bomb_2.gif";
+        var bomb1 = new Image();
+        bomb1.src = "images/bomb_1.gif";
+
+        var born1 = new Image();
+        born1.src = "images/born1.gif";
+        var born2 = new Image();
+        born2.src = "images/born2.gif";
+        var born3 = new Image();
+        born3.src = "images/born3.gif";
+        var born4 = new Image();
+        born4.src = "images/born4.gif";
+
+        var buBoImg = new Image();
+        buBoImg.src = "images/blast1.gif";
+
+        var base1 = new Image();
+        base1.src = "images/symbol.gif";
+        var base2 = new Image();
+        base2.src = "images/destory.gif";
+
+    </script>
+    <script src="js/Draw.js"></script>
+    <script src="js/htmljs.js"></script>
+    
+</body>
+</html>

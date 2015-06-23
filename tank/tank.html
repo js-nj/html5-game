@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta charset="utf-8" />
+    <title>HTML5经典坦克大战</title>
+    <script src="js/jquery-1.10.2.min.js"></script>
+    <style type="text/css">
+      body,div,canvas,h1,a {margin: 0;padding: 0;}
+      a{text-decoration: none;}
+      .con {margin:0 auto;width: 650px;}
+      #tankmap {background-color:#000;}
+      .con .tips { margin-top:20px;font-weight:bolder;font-size:20px;color:red;}
+      .con .start { display: inline-block;width: 100px;text-align: center;padding: 5px;margin: 5px;background: #911;cursor:pointer;border-radius: 5px;color: #fff;font-weight: 700;font-size: 15px; }
+      .con .start:hover {background: #888; }
+      .con .more {display: inline-block;width: 100px;text-align: center;padding: 5px;margin: 5px;background: #911;cursor:pointer;border-radius: 5px;color: #fff;font-weight: 700;font-size: 15px;}
+      .con .more:hover {background: #888; }
+    </style>
+</head>
+<body onkeydown="getCommand()">
+  <div class="con">
+    <h1>HTML5——经典坦克大战</h1>
+    <a class="start" onclick="start()">开始游戏</a>
+    <a href="http://qunimei.oupeng.com/game" class="more">更多游戏</a>
+    <canvas id="tankmap"  width="612" height="506" ago="600/506"></canvas>
+    <div class="tips">
+        W、S、A、D分别控制：上、下、左、右；J是发子弹。暂时不支持Firefox浏览器。
+    </div>
+  </div>
+  <script type="text/javascript">
+    var gameover = false;
+    var verygood = false;
+    var canH = document.getElementById("tankmap");
+    var cxt = canH.getContext("2d");
+    var heroColor1,heroColor2,enemyColor1,enemyColor2,enemyColor3,enemyColor4,enemyBullets,enemyBulletBombs,hero1bullet,hero1bulletBomb;
+    var hero1born, hero1, enemyborns, enemys, enemy_loca, tankbombs, lastcode, hampers; 
+    var canvasLength=612,canvasHeight=506;
+    var hamperLength=17,hamperHeight=10,hamperLine=1;
+    var tankWidth=50,tankHeight=50;
+    var buBoImgWidth=22,buBoImgHeight=14;
+    var bulletHeight=bulletWidth=3;
+    var symbolWidth=50,symbolHeight=50;
+    var heroLife = 2;
+    var time = 0;
+    var basehitX = canvasLength/2 - hamperLength,basehitY=canvasHeight;//home初始坐标
+    var hamBlockLen = hamperLength+hamperLine,hamBlockHei=hamperHeight+hamperLine;
+    var basehamX = basehitX-hamperLength-2, basehamY = basehitY-hamperHeight;//home左侧墙的左下角hamper的左上角坐标
+
+    var bomb3 = new Image();
+    bomb3.src = "images/bomb_3.gif";
+    var bomb2 = new Image();
+    bomb2.src = "images/bomb_2.gif";
+    var bomb1 = new Image();
+    bomb1.src = "images/bomb_1.gif";
+
+    var born1 = new Image();
+    born1.src = "images/born1.gif";
+    var born2 = new Image();
+    born2.src = "images/born2.gif";
+    var born3 = new Image();
+    born3.src = "images/born3.gif";
+    var born4 = new Image();
+    born4.src = "images/born4.gif";
+
+    var buBoImg = new Image();
+    buBoImg.src = "images/blast2.gif";
+
+    var base1 = new Image();
+    base1.src = "images/symbol.gif";
+    var base2 = new Image();
+    base2.src = "images/destory.gif";
+
+    var ice = new Image();
+    ice.src = "images/ice.png";
+    var brike = new Image();
+    brike.src = "images/brike.jpg";
+
+    var loseImg = new Image();
+    loseImg.src = "images/lose.png";
+    var winImg = new Image();
+    winImg.src = "images/win.png";
+
+    var heroTank = new Image();
+    heroTank.src="images/heroTank.png";
+  </script>
+  <script>
+    function start(){
+      heroColor1 = new Array("#ba9658", "#fef26e");
+      heroColor2 = new Array("#00a2b5", "#00fefe");
+      enemyColor1 = new Array("#006f43", "#43b387");
+      enemyColor2 = new Array("#f00", "#e34444");
+      enemyColor3 = new Array("#fa02e6", "#d45bca");
+      enemyColor4 = new Array("#0600fd", "#3531c4");
+      enemyBullets = new Array();
+      enemyBulletBombs = new Array();
+      hero1bullet = null;
+      hero1bulletBomb = null;
+      hampers = new Array;
+      // $.getScript("http://www.xujiabin.com/tank/js/map3.js");
+      // $.getScript("http://dev.njdev.oupeng.com/public/bin/tank/map3.js");
+      //以画布的左上角为原点（0,0），横向为x轴，纵向为y轴
+      //basehamX , basehamY  home左侧墙的左下角坐标
+      //var hamperLength=17,hamperHeight=10;
+      var home_right = new HamperBlock(basehamX,basehamY,1,1,7,0);
+      home_right.SetBlock();
+      var home_top = new HamperBlock(basehamX+hamBlockLen*1,basehamY-hamBlockHei*5,1,3,2,7);
+      home_top.SetBlock();
+      var home_left = new HamperBlock(basehamX+hamBlockLen*4,basehamY,1,1,7,13);
+      home_left.SetBlock();
+
+      var block_1 = new HamperBlock(576,320,2,2,2,160);   //右侧冰墙
+      block_1.SetBlock();
+      var block_2 = new HamperBlock(1,320,2,29,2,164);     //左侧冰墙
+      block_2.SetBlock();
+      var block_3 = new HamperBlock(382,100,1,10,5,50);    //右上侧砖墙
+      block_3.SetBlock();
+      var block_4 = new HamperBlock(30,61,1,10,2,20);     //左上侧砖墙
+      block_4.SetBlock();
+      var block_5 = new HamperBlock(212,186,1,10,2,40);   //正中间砖墙
+      block_5.SetBlock();
+      var block_6 = new HamperBlock(90,496,1,2,15,100);    //左下侧砖墙
+      block_6.SetBlock();
+      var block_7 = new HamperBlock(342,297,1,15,2,130);  //右侧中间砖墙
+      block_7.SetBlock();
+
+      hero1born = new Born(basehitX-tankWidth*2, basehitY-tankHeight);
+      hero1 = null;
+      enemyborns = new Array;
+      enemyborns[0] = new Born(0, 0);
+      enemyborns[1] = new Born((canvasLength-tankWidth)/2, 0);
+      enemyborns[2] = new Born(canvasLength-tankWidth, 0);
+      enemys = new Array;
+      enemy_loca = 1;
+      tankbombs = new Array; 
+      lastcode = 87;
+
+      flashTankMap();
+      window.setInterval("f5()", 20);
+    }
+  </script>
+  <script>
+    function f5(){
+      hitTank();                  // window.setInterval("hitTank()", 20);
+      time++;
+      yus = time % 5;
+      yush = time % 150;
+      if (yus == 0) {
+        flashTankMap();           // window.setInterval("flashTankMap()", 100);
+        moveEnemyTank();          // window.setInterval("moveEnemyTank()", 100);
+        if (yush == 0) {
+          enemyBorn();            //window.setInterval("enemyBorn()", 3000);
+        }
+      }
+    }
+    function HamperBlock(a,b,c,d,e,f){
+      this.start_x = a;
+      this.start_y = b;
+      this.hamperStyle = c;
+      this.length_x = d;
+      this.length_y = e;
+      this.hamperNum = f;
+      this.SetBlock = function(){
+        for (var ham_x = 0; ham_x < this.length_x; ham_x++) {
+          for (var ham_y = 0; ham_y < this.length_y; ham_y++) {
+            hampers[this.hamperNum] = new Hamper(this.start_x,this.start_y,this.hamperStyle);
+            this.start_y -=(hamperHeight+1);
+            this.hamperNum++;
+          }
+          this.start_y = b;
+          this.start_x +=(hamperLength+1);
+        }
+      }
+    }
+    function Hamper(a, b, c) {  //设置障碍样式函数
+      this.x = a;
+      this.y = b;
+      this.style = c;
+      this.Draw = function() {
+        switch (this.style) {
+        case 1:
+          cxt.drawImage(brike,this.x, this.y, hamperLength, hamperHeight);
+          break;
+        case 2:
+          cxt.drawImage(ice,this.x, this.y, hamperLength, hamperHeight);
+          break;
+        case 3:
+          break;
+        case 4:
+          break;
+        }
+      }
+    }
+    function Born(a, b) {                                              // 构造Born对象，出生的位置，传入的参数
+      this.x = a;
+      this.y = b;
+      this.time = 0;
+      this.born = !0;
+      this.drawBorn = function() {                                     //坦克出生时星星图标变大
+        this.time <= 1 && cxt.drawImage(born1, this.x, this.y, tankWidth, tankHeight);
+        this.time > 1 && this.time <= 3 && cxt.drawImage(born2, this.x, this.y, tankWidth, tankHeight);
+        this.time >= 4 && this.time <= 5 && cxt.drawImage(born3, this.x, this.y, tankWidth, tankHeight);
+        this.time >= 6 && this.time <= 7 && cxt.drawImage(born4, this.x, this.y, tankWidth, tankHeight);
+        this.time >= 8 && this.time <= 9 && cxt.drawImage(born2, this.x, this.y, tankWidth, tankHeight);
+        this.time >= 10 && this.time <= 11 && cxt.drawImage(born3, this.x, this.y, tankWidth, tankHeight);
+        this.time >= 12 && this.time <= 13 && cxt.drawImage(born4, this.x, this.y, tankWidth, tankHeight);
+        this.time++;
+        this.time >= 13 && (this.born = !1, this.time = 0);
+      }
+    }
+    function Tank(a, b, c, d, e, f) {                            //构造坦克对象，x坐标，y坐标，移动速度，移动方向，坦克颜色，活着状态
+      this.x = a,
+      this.y = b,
+      this.speed = c,
+      this.direct = d,
+      this.tankcolor = e,
+      this.islive = f,
+      this.moveUp = function() {
+        this.y = this.y - this.speed,
+        this.y <= 0 && (this.y = 0),
+        this.direct = 0;
+      },
+      this.moveDown = function() {
+        this.y = this.y + this.speed,
+        this.y >= canvasHeight-tankHeight && (this.y = canvasHeight-tankHeight),
+        this.direct = 2;
+      },
+      this.moveLeft = function() {
+        this.x = this.x - this.speed,
+        this.x <= 0 && (this.x = 0),
+        this.direct = 3;
+      },
+      this.moveRight = function() {
+        this.x = this.x + this.speed,
+        this.x >= canvasLength-tankWidth && (this.x = canvasLength-tankWidth),
+        this.direct = 1;
+      }
+    }
+    function Hero(a, b, c, d, e, f) {  //构造英雄对象
+      this.tank = Tank,
+      this.tank(a, b, c, d, e, f),
+      this.attackEnemy = function() {
+        if (null == hero1bullet) {
+          switch (this.direct) {
+          case 0:
+            hero1bullet = new Bullet(this.x + tankWidth/2 - 1, this.y, 4, 0);
+            break;
+          case 1:
+            hero1bullet = new Bullet(this.x + tankWidth, this.y + tankHeight/2 - 1, 4, 1);
+            break;
+          case 2:
+            hero1bullet = new Bullet(this.x + tankWidth/2 - 1, this.y + tankHeight, 4, 2);
+            break;
+          case 3:
+            hero1bullet = new Bullet(this.x, this.y + tankHeight/2 - 1, 4, 3);
+            break;
+          }
+          hero1bullet.time = window.setInterval("hero1bullet.run('hero')", 20);
+        }
+      }
+    }
+function Enemy(a, b, c, d, e, f) {
+    this.tank = Tank,
+    this.tank(a, b, c, d, e, f),
+    this.run = function() {
+        if (0 != this.islive) switch (this.changeDir(), this.direct) {
+        case 0:
+            this.y <= 0 && this.beyondChange(),
+            this.enemyTankCollision(this) || this.moveUp();
+            break;
+        case 1:
+            this.x >= 556 && this.beyondChange(),
+            this.enemyTankCollision(this) || this.moveRight();
+            break;
+        case 2:
+            this.y >= 456 && this.beyondChange(),
+            this.enemyTankCollision(this) || this.moveDown();
+            break;
+        case 3:
+            this.x <= 0 && this.beyondChange(),
+            this.enemyTankCollision(this) || this.moveLeft()
+        }
+    },
+    this.changeDir = function() {
+      var a = Math.round(99 * Math.random()); //a 为0-99之间任意随机数 math.round四舍五入
+      4 > a && (this.direct = Math.round(3 * Math.random()));
+    },
+    this.beyondChange = function() {
+      this.direct = Math.round(3 * Math.random());
+    },
+    this.attackEnemy = function(a) {
+      if (null == enemyBullets[a] && Math.round(99 * Math.random()) < 4) {
+        switch (this.direct) {
+        case 0:
+          enemyBullets[a] = new Bullet(this.x + tankWidth/2, this.y, 4, 0);
+          break;
+        case 1:
+          enemyBullets[a] = new Bullet(this.x + tankWidth, this.y + tankHeight/2, 4, 1);
+          break;
+        case 2:
+          enemyBullets[a] = new Bullet(this.x + tankWidth/2, this.y + tankWidth, 4, 2);
+          break;
+        case 3:
+          enemyBullets[a] = new Bullet(this.x, this.y + tankHeight/2, 4, 3);
+        }
+        enemyBullets[a].time = window.setInterval("enemyBullets[" + a + "].run(" + a + ")", 20);
+      }
+    },
+    this.enemyTankCollision = function(a) {
+      var c, d, e, b = null;
+      for (c = 0; c < enemys.length; c++) {  //敌坦克与英雄或者敌坦克的碰撞检测
+        if (b = enemys[c], null != b && 0 != b.islive){
+          switch (a.direct) {
+            case 0:
+              if (null != hero1 && 0 != hero1.islive && a.x > hero1.x - 50 && a.x < hero1.x + 50 && ( a.y == hero1.y + 50 || a.y == hero1.y + 49 || a.y == hero1.y + 48 || a.y == hero1.y + 47)) return ! 0;
+              if (a.x > b.x - 50 && a.x < b.x + 50 && ( a.y == b.y + 52 || a.y == b.y + 51 || a.y == b.y + 50|| a.y == b.y + 49 )) return ! 0;
+              break;
+            case 1:
+              if (null != hero1 && 0 != hero1.islive && a.y > hero1.y - 50 && a.y < hero1.y + 50 && ( a.x + 50 == hero1.x || a.x + 49 == hero1.x || a.x + 48 == hero1.x || a.x + 47 == hero1.x )) return ! 0;
+              if (a.y > b.y - 50 && a.y < b.y + 50 && ( a.x + 52 == b.x || a.x + 51 == b.x || a.x + 50 == b.x ||a.x + 49  == b.x)) return ! 0;
+              break;
+            case 2:
+              if (null != hero1 && 0 != hero1.islive && a.x > hero1.x - 50 && a.x < hero1.x + 50 && (a.y == hero1.y - 50 || a.y == hero1.y - 49 || a.y == hero1.y - 48 || a.y == hero1.y - 47 )) return ! 0;
+              if (a.x > b.x - 50 && a.x < b.x + 50 && (a.y == b.y - 52 || a.y == b.y - 51 || a.y == b.y - 50 || a.y == b.y - 49  )) return ! 0;
+              break;
+            case 3:
+              if (null != hero1 && 0 != hero1.islive && a.y > hero1.y - 50 && a.y < hero1.y + 50 && ( a.x - 50 == hero1.x || a.x - 49 == hero1.x || a.x - 48 == hero1.x || a.x - 47 == hero1.x )) return ! 0;
+              if (a.y > b.y - 50 && a.y < b.y + 50 && (a.x - 52 == b.x || a.x - 51 == b.x || a.x - 50 == b.x || a.x - 49  == b.x)) return ! 0;
+              break;
+          }
+        }
+      }
+      for (d = null, e = 0; e < hampers.length; e++){ //敌坦克与hampers的碰撞检测
+        if (d = hampers[e], null != d){
+          switch (hampers[e].style) {
+            case 1:
+              switch (a.direct) {
+              case 0:
+                if (a.x >= d.x - 50 && a.x <= d.x + 17 && (a.y == d.y + 10 || a.y == d.y + 9 || a.y == d.y + 8 || a.y == d.y + 7)) return ! 0;
+                break;
+              case 1:
+                if (a.y > d.y - 50 && a.y < d.y + 10 && (a.x + 50 == d.x || a.x + 49 == d.x || a.x + 48 == d.x || a.x + 47 == d.x)) return ! 0;
+                break;
+              case 2:
+                if (a.x > d.x - 50 && a.x < d.x + 17 && (a.y + 52 == d.y || a.y + 51 == d.y || a.y + 50 == d.y || a.y + 49 == d.y)) return ! 0;
+                break;
+              case 3:
+                if (a.y > d.y - 50 && a.y < d.y + 10 && (a.x == d.x + 17 || a.x == d.x + 16 || a.x == d.x + 15 || a.x == d.x + 14)) return ! 0;
+              }
+              break;
+            case 2:
+              switch (a.direct) {
+                case 0:
+                  if (a.x >= d.x - 50 && a.x <= d.x + 17 && (a.y == d.y + 7 || a.y == d.y + 8 || a.y == d.y + 9 || a.y == d.y + 10)) return ! 0;
+                  break;
+                case 1:
+                  if (a.y > d.y - 50 && a.y < d.y + 10 && (a.x + 50 == d.x || a.x + 49 == d.x || a.x + 48 == d.x || a.x + 47 == d.x)) return ! 0;
+                  break;
+                case 2:
+                  if (a.x > d.x - 50 && a.x < d.x + 17 && (a.y + 52 == d.y || a.y + 51 == d.y || a.y + 50 == d.y || a.y + 49 == d.y)) return ! 0;
+                  break;
+                case 3:
+                  if (a.y > d.y - 50 && a.y < d.y + 10 && (a.x == d.x + 10 || a.x == d.x + 9 || a.x == d.x + 8 || a.x == d.x + 7)) return ! 0;
+                }
+              break;
+            case 3:
+              break;
+            case 4:
+              break;
+          }
+        }
+      }
+    }
+}
+function Bullet(a, b, c, d) {   //a b 分别是坦克的左上角坐标
+    this.x = a,
+    this.y = b,
+    this.speed = c,
+    this.direct = d,
+    this.time = null,
+    this.islive = !0,
+    this.run = function(a) {
+        if ((this.x >= canvasLength || this.x <= 0 || this.y >= canvasHeight || this.y <= 0) && this.islive) {
+            if (window.clearInterval(this.time), this.islive = !1, "hero" == a) {
+                switch (hero1bullet = null, this.direct) {
+                    case 0:
+                        hero1bulletBomb = new bulletBomb(this.x - buBoImgWidth/2, this.y - buBoImgHeight/2);
+                        break;
+                    case 1:
+                        hero1bulletBomb = new bulletBomb(this.x - buBoImgWidth/2, this.y - buBoImgHeight/2);
+                        break;
+                    case 2:
+                        hero1bulletBomb = new bulletBomb(this.x - buBoImgWidth/2, this.y - buBoImgHeight/2);
+                        break;
+                    case 3:
+                        hero1bulletBomb = new bulletBomb(this.x - buBoImgWidth/2, this.y - buBoImgHeight/2);
+                        break;
+                } 
+            }else {
+                switch (enemyBullets[a] = null, this.direct) {
+                    case 0:
+                        enemyBulletBombs[a] = new bulletBomb(this.x - buBoImgWidth/2, this.y - buBoImgHeight/2);
+                        break;
+                    case 1:
+                        enemyBulletBombs[a] = new bulletBomb(this.x - buBoImgWidth/2, this.y - buBoImgHeight/2);
+                        break;
+                    case 2:
+                        enemyBulletBombs[a] = new bulletBomb(this.x - buBoImgWidth/2, this.y - buBoImgHeight/2);
+                        break;
+                    case 3:
+                        enemyBulletBombs[a] = new bulletBomb(this.x - buBoImgWidth/2, this.y - buBoImgHeight/2);
+                        break;
+                } 
+            }
+        }else {
+            switch (this.direct) {
+                case 0:
+                    this.y = this.y - this.speed;
+                    break;
+                case 1:
+                    this.x = this.x + this.speed;
+                    break;
+                case 2:
+                    this.y = this.y + this.speed;
+                    break;
+                case 3:
+                    this.x = this.x - this.speed;
+                    break;
+            }
+        }
+    }
+}
+function DrawTank(a) {     //坦克绘制函数
+    switch (a.direct) {
+    case 0:
+    case 2:
+        // cxt.drawImage(heroTank,a.x,a.y,50,50);
+        cxt.beginPath(),
+        cxt.fillStyle = a.tankcolor[0],
+        cxt.fillRect(a.x, a.y, 11, 50),
+        cxt.fillRect(a.x + 12, a.y + 10, 26, 30),
+        cxt.fillRect(a.x + 39, a.y, 11, 50),
+        cxt.fillStyle = a.tankcolor[1],
+        cxt.arc(a.x + 25, a.y + 25, 10, 360, 0, !0),
+        cxt.fill(),
+        cxt.closePath(),
+        cxt.beginPath(),
+        cxt.strokeStyle = a.tankcolor[1],
+        cxt.lineWidth = 2,
+        cxt.moveTo(a.x + 25, a.y + 25),
+        0 == a.direct ? cxt.lineTo(a.x + 25, a.y + 0) : 2 == a.direct && cxt.lineTo(a.x + 25, a.y + 50),//确定坦克炮筒的方向
+        cxt.closePath(),
+        cxt.stroke();
+        break;
+    case 1:
+    case 3:
+        cxt.beginPath(),
+        cxt.fillStyle = a.tankcolor[0],
+        cxt.fillRect(a.x, a.y, 50, 11),
+        cxt.fillRect(a.x + 10, a.y + 12, 30, 26),
+        cxt.fillRect(a.x, a.y + 39, 50, 11),
+        cxt.fillStyle = a.tankcolor[1],
+        cxt.arc(a.x + 25, a.y + 25, 10, 360, 0, !0),
+        cxt.fill(),
+        cxt.closePath(),
+        cxt.beginPath(),
+        cxt.strokeStyle = a.tankcolor[1],
+        cxt.lineWidth = 2,
+        cxt.moveTo(a.x + 25, a.y + 25),
+        1 == a.direct ? cxt.lineTo(a.x + 50, a.y + 25) : 3 == a.direct && cxt.lineTo(a.x, a.y + 25),//确定坦克炮筒的方向
+        cxt.closePath(),
+        cxt.stroke()
+    }
+}
+
+function DrawBullet() {
+    var b, a = null;
+    for (cxt.fillStyle = "#ba9658", b = 0; b < enemyBullets.length; b++) {
+        if (a = enemyBullets[b], null != a && a.islive){
+            switch (a.direct) {
+                case 0:
+                case 2:
+                    cxt.fillRect(a.x, a.y, bulletWidth, bulletHeight);
+                    break;
+                case 1:
+                case 3:
+                    cxt.fillRect(a.x, a.y, bulletWidth, bulletHeight);
+            }
+        }
+        if (null != hero1bullet && hero1bullet.islive) {
+            switch (hero1bullet.direct) {
+                case 0:
+                case 2:
+                    cxt.fillRect(hero1bullet.x, hero1bullet.y, bulletWidth, bulletHeight);
+                    break;
+                case 1:
+                case 3:
+                    cxt.fillRect(hero1bullet.x, hero1bullet.y, bulletWidth, bulletHeight);
+            }
+        }
+    }
+}
+function DrawSymbol() {   //设置标志函数（鹰标）
+    cxt.beginPath();
+    if (gameover) {
+      cxt.drawImage(base2, basehitX, basehitY-symbolHeight, symbolWidth, symbolHeight);
+    } else{
+      cxt.drawImage(base1, basehitX, basehitY-symbolHeight, symbolWidth, symbolHeight);
+    }
+    cxt.closePath();
+}
+function hitTank() {
+  var a, b, c, d, e, f;
+  for (a = 0; a < enemyBullets.length; a++) {    //敌坦克打中英雄
+    if (null != hero1 && 0 != hero1.islive && null != enemyBullets[a]) {
+      switch (enemyBullets[a].direct) {
+        case 0:
+          enemyBullets[a].x + 2 >= hero1.x && enemyBullets[a].x + 2 <= hero1.x + 50 && enemyBullets[a].y + 3 <= hero1.y + 50 && enemyBullets[a].y + 3 >= hero1.y && (enemyBullets[a].islive = !1, window.clearInterval(enemyBullets[a].time), enemyBullets[a] = null, hero1.islive--,heroLife--, b = new TankBomb(hero1.x, hero1.y),tankbombs.push(b),hero1 = null,hero1born = new Born(basehitX-tankWidth*2, basehitY-tankHeight));
+          break;
+        case 1:
+          enemyBullets[a].x + 3 >= hero1.x && enemyBullets[a].x + 3 <= hero1.x + 50 && enemyBullets[a].y + 2 >= hero1.y && enemyBullets[a].y + 2 <= hero1.y + 50 && (enemyBullets[a].islive = !1, window.clearInterval(enemyBullets[a].time), enemyBullets[a] = null, hero1.islive--,heroLife--, b = new TankBomb(hero1.x, hero1.y),tankbombs.push(b),hero1 = null,hero1born = new Born(basehitX-tankWidth*2, basehitY-tankHeight));
+          break;
+        case 2:
+          enemyBullets[a].x + 2 >= hero1.x && enemyBullets[a].x + 2 <= hero1.x + 50 && enemyBullets[a].y + 3 <= hero1.y + 50 && enemyBullets[a].y + 3 >= hero1.y && (enemyBullets[a].islive = !1, window.clearInterval(enemyBullets[a].time), enemyBullets[a] = null, hero1.islive--,heroLife--, b = new TankBomb(hero1.x, hero1.y),tankbombs.push(b),hero1 = null,hero1born = new Born(basehitX-tankWidth*2, basehitY-tankHeight));
+          break;
+        case 3:
+          enemyBullets[a].x <= hero1.x + 50 && enemyBullets[a].x >= hero1.x && enemyBullets[a].y + 2 >= hero1.y && enemyBullets[a].y + 2 <= hero1.y + 50 && (enemyBullets[a].islive = !1, window.clearInterval(enemyBullets[a].time), enemyBullets[a] = null, hero1.islive--,heroLife--, b = new TankBomb(hero1.x, hero1.y),tankbombs.push(b),hero1 = null,hero1born = new Born(basehitX-tankWidth*2, basehitY-tankHeight));
+          break;
+      }
+      if (0 == heroLife) {
+        hero1 = null;
+        if (null == hero1) {
+          gameover = !0;
+        }
+      }
+    }
+  }
+  for (c = null, d = null, a = 0; a < enemyBullets.length; a++){ //敌坦克打中hampers
+    if (c = enemyBullets[a], null != c){ 
+      for (e = 0; e < hampers.length; e++) {
+        if (d = hampers[e], null != d && null != c) {
+          switch (c.direct) {
+            case 0:
+              switch (d.style) {
+              case 1:
+                c.x >= d.x - 1 && c.x <= d.x + 17 && c.y <= d.y + 10 && c.y >= d.y && (enemyBullets[a].islive = !1, window.clearInterval(enemyBullets[a].time), enemyBulletBombs[a] = new bulletBomb(c.x - buBoImgWidth/2, c.y - buBoImgHeight/2), enemyBullets[a] = null, hampers[e] = null);
+                break;
+              case 2:
+                c.x >= d.x - 1 && c.x <= d.x + 17 && c.y <= d.y + 10 && c.y >= d.y && (enemyBullets[a].islive = !1, window.clearInterval(enemyBullets[a].time), enemyBulletBombs[a] = new bulletBomb(c.x - buBoImgWidth/2, c.y - buBoImgHeight/2), enemyBullets[a] = null)
+              }
+              break;
+            case 1:
+              switch (d.style) {
+              case 1:
+                c.x >= d.x && c.x <= d.x + 17 && c.y <= d.y + 10 && c.y >= d.y - 1 && (enemyBullets[a].islive = !1, window.clearInterval(enemyBullets[a].time), enemyBulletBombs[a] = new bulletBomb(c.x - buBoImgWidth/2, c.y - buBoImgHeight/2), enemyBullets[a] = null, hampers[e] = null);
+                break;
+              case 2:
+                c.x >= d.x && c.x <= d.x + 17 && c.y <= d.y + 10 && c.y >= d.y - 1 && (enemyBullets[a].islive = !1, window.clearInterval(enemyBullets[a].time), enemyBulletBombs[a] = new bulletBomb(c.x - buBoImgWidth/2, c.y - buBoImgHeight/2), enemyBullets[a] = null)
+              }
+              break;
+            case 2:
+              switch (d.style) {
+              case 1:
+                c.x >= d.x - 1 && c.x <= d.x + 17 && c.y + 2 <= d.y + 10 && c.y + 2 >= d.y && (enemyBullets[a].islive = !1, window.clearInterval(enemyBullets[a].time), enemyBulletBombs[a] = new bulletBomb(c.x - buBoImgWidth/2, c.y - buBoImgHeight/2), enemyBullets[a] = null, hampers[e] = null);
+                break;
+              case 2:
+                c.x >= d.x - 1 && c.x <= d.x + 17 && c.y + 2 <= d.y + 10 && c.y + 2 >= d.y && (enemyBullets[a].islive = !1, window.clearInterval(enemyBullets[a].time), enemyBulletBombs[a] = new bulletBomb(c.x - buBoImgWidth/2, c.y - buBoImgHeight/2), enemyBullets[a] = null);
+              }
+              break;
+            case 3:
+              switch (d.style) {
+              case 1:
+                c.x >= d.x && c.x <= d.x + 17 && c.y + 1 <= d.y + 10 && c.y + 1 >= d.y && (enemyBullets[a].islive = !1, window.clearInterval(enemyBullets[a].time), enemyBulletBombs[a] = new bulletBomb(c.x - buBoImgWidth/2, c.y - buBoImgHeight/2), enemyBullets[a] = null, hampers[e] = null);
+                break;
+              case 2:
+                c.x >= d.x && c.x <= d.x + 17 && c.y + 1 <= d.y + 10 && c.y + 1 >= d.y && (enemyBullets[a].islive = !1, window.clearInterval(enemyBullets[a].time), enemyBulletBombs[a] = new bulletBomb(c.x - buBoImgWidth/2, c.y - 50), enemyBullets[a] = null);
+              }
+              break;
+          }
+        }
+      }
+    }
+  }
+  if (null != hero1bullet) { //英雄坦克打中敌军和hampers
+    for (f = 0; f < enemys.length; f++) {
+      if (null != enemys[f] && 0 != enemys[f].islive && null != hero1bullet) {
+        switch (hero1bullet.direct) {
+          case 0:
+            hero1bullet.x + 2 >= enemys[f].x && hero1bullet.x + 2 <= enemys[f].x + 50 && hero1bullet.y + 3 <= enemys[f].y + 50 && hero1bullet.y + 3 >= enemys[f].y && (hero1bullet.islive = !1, window.clearInterval(hero1bullet.time), hero1bullet = null, enemys[f].islive--);
+            break;
+          case 1:
+            hero1bullet.x + 3 >= enemys[f].x && hero1bullet.x + 3 <= enemys[f].x + 50 && hero1bullet.y + 2 >= enemys[f].y && hero1bullet.y + 2 <= enemys[f].y + 50 && (hero1bullet.islive = !1, window.clearInterval(hero1bullet.time), hero1bullet = null, enemys[f].islive--);
+            break;
+          case 2:
+            hero1bullet.x + 2 >= enemys[f].x && hero1bullet.x + 2 <= enemys[f].x + 50 && hero1bullet.y + 3 <= enemys[f].y + 50 && hero1bullet.y + 3 >= enemys[f].y && (hero1bullet.islive = !1, window.clearInterval(hero1bullet.time), hero1bullet = null, enemys[f].islive--);
+            break;
+          case 3:
+            hero1bullet.x <= enemys[f].x + 50 && hero1bullet.x >= enemys[f].x && hero1bullet.y + 2 >= enemys[f].y && hero1bullet.y + 2 <= enemys[f].y + 50 && (hero1bullet.islive = !1, window.clearInterval(hero1bullet.time), hero1bullet = null, enemys[f].islive--);
+        }
+        0 == enemys[f].islive && (b = new TankBomb(enemys[f].x, enemys[f].y), tankbombs.push(b), enemys[f] = null);
+      }
+    }
+    for (d = null, e = 0; e < hampers.length; e++){ 
+      if (d = hampers[e], null != d && null != hero1bullet) {
+        switch (hero1bullet.direct) {
+          case 0:
+            switch (d.style) {
+            case 1:
+              hero1bullet.x + bulletWidth/2 >= d.x && hero1bullet.x <= d.x + hamperLength && hero1bullet.y <= d.y + hamperHeight && hero1bullet.y + bulletHeight/2 >= d.y && (hero1bullet.islive = !1, window.clearInterval(hero1bullet.time), hero1bulletBomb = new bulletBomb(hero1bullet.x - buBoImgWidth/2, hero1bullet.y - buBoImgHeight/2), hero1bullet = null, hampers[e] = null);
+              break;
+            case 2:
+              hero1bullet.x + bulletWidth/2 >= d.x && hero1bullet.x <= d.x + hamperLength && hero1bullet.y <= d.y + hamperHeight && hero1bullet.y + bulletHeight/2 >= d.y && (hero1bullet.islive = !1, window.clearInterval(hero1bullet.time), hero1bulletBomb = new bulletBomb(hero1bullet.x - buBoImgWidth/2, hero1bullet.y - buBoImgHeight/2), hero1bullet = null);
+              break;
+            }
+            break;
+          case 1:
+            switch (d.style) {
+            case 1:
+              hero1bullet.x + bulletWidth/2 >= d.x && hero1bullet.x <= d.x + hamperLength && hero1bullet.y <= d.y + hamperHeight && hero1bullet.y+bulletHeight/2 >= d.y && (hero1bullet.islive = !1, window.clearInterval(hero1bullet.time), hero1bulletBomb = new bulletBomb(hero1bullet.x - buBoImgWidth/2, hero1bullet.y - buBoImgHeight/2), hero1bullet = null, hampers[e] = null);
+              break;
+            case 2:
+              hero1bullet.x + bulletWidth/2 >= d.x && hero1bullet.x <= d.x + hamperLength && hero1bullet.y <= d.y + hamperHeight && hero1bullet.y+bulletHeight/2 >= d.y && (hero1bullet.islive = !1, window.clearInterval(hero1bullet.time), hero1bulletBomb = new bulletBomb(hero1bullet.x - buBoImgWidth/2, hero1bullet.y - buBoImgHeight/2), hero1bullet = null);
+            }
+            break;
+          case 2:
+            switch (d.style) {
+            case 1:
+              hero1bullet.x+bulletWidth/2 >= d.x && hero1bullet.x <= d.x + hamperLength && hero1bullet.y <= d.y + hamperHeight && hero1bullet.y + bulletHeight/2 >= d.y && (hero1bullet.islive = !1, window.clearInterval(hero1bullet.time), hero1bulletBomb = new bulletBomb(hero1bullet.x - buBoImgWidth/2, hero1bullet.y - buBoImgHeight/2), hero1bullet = null, hampers[e] = null);
+              break;
+            case 2:
+              hero1bullet.x+bulletWidth/2 >= d.x && hero1bullet.x <= d.x + hamperLength && hero1bullet.y <= d.y + hamperHeight && hero1bullet.y + bulletHeight/2 >= d.y && (hero1bullet.islive = !1, window.clearInterval(hero1bullet.time), hero1bulletBomb = new bulletBomb(hero1bullet.x - buBoImgWidth/2, hero1bullet.y - buBoImgHeight/2), hero1bullet = null);
+            }
+            break;
+          case 3:
+            switch (d.style) {
+            case 1:
+              hero1bullet.x + bulletWidth/2 >= d.x && hero1bullet.x <= d.x + hamperLength && hero1bullet.y + bulletHeight/2 <= d.y + hamperHeight && hero1bullet.y >= d.y && (hero1bullet.islive = !1, window.clearInterval(hero1bullet.time), hero1bulletBomb = new bulletBomb(hero1bullet.x - buBoImgWidth/2, hero1bullet.y - buBoImgHeight/2), hero1bullet = null, hampers[e] = null);
+              break;
+            case 2:
+              hero1bullet.x + bulletWidth/2 >= d.x && hero1bullet.x <= d.x + hamperLength && hero1bullet.y + bulletHeight/2 <= d.y + hamperHeight && hero1bullet.y >= d.y && (hero1bullet.islive = !1, window.clearInterval(hero1bullet.time), hero1bulletBomb = new bulletBomb(hero1bullet.x - buBoImgWidth/2, hero1bullet.y - buBoImgHeight/2), hero1bullet = null);
+            }
+        }
+      }
+    }
+  }
+}
+function TankBomb(a, b) {   //坦克被击中爆炸函数
+  this.x = a;
+  this.y = b;
+  this.time = 0;
+  this.imgsrc = "";
+  this.isLive = !0;
+  this.drawBomb = function() {
+    // console.log(this.time);
+    this.time <= 2 && cxt.drawImage(bomb3, this.x, this.y, tankWidth, tankHeight);
+    this.time > 2 && this.time <= 5 && cxt.drawImage(bomb2, this.x, this.y, tankWidth, tankHeight);
+    this.time >= 6 && this.time <= 9 && cxt.drawImage(bomb1, this.x, this.y, tankWidth, tankHeight);
+    this.time >= 10 && this.time <= 12 && cxt.drawImage(bomb2, this.x, this.y, tankWidth, tankHeight);
+    this.time >= 13 && this.time <= 15 && cxt.drawImage(bomb3, this.x, this.y, tankWidth, tankHeight);
+    this.time++,
+    this.time >= 15 && (this.isLive = !1, this.time = 0);
+  }
+}
+function bulletBomb(a, b) {   //子弹爆炸函数
+  this.x = a;
+  this.y = b;
+  this.drawBomb = function() {
+    cxt.drawImage(buBoImg, this.x, this.y);
+  }
+}
+function hitBase() {   //击中老巢函数
+  var a, b;
+  if (!gameover) {
+    for (a = null, b = 0; b < enemyBullets.length; b++) {
+      if (a = enemyBullets[b], null != a) {
+        switch (a.direct) {
+          case 0:
+            break;
+          case 1:
+            a.x >= basehitX && a.x <= (basehitX+hamperLength*3+1*hamperLine) && a.y + 1 >= (basehitY-hamperHeight*5-hamperLine*4) && a.y <= basehitY && (gameover = !0, enemyBullets[b] = null);
+            break;
+          case 2:
+            a.x + 1 >= basehitX && a.x <= (basehitX+hamperLength*3+1*hamperLine) && a.y + 2 >= (basehitY-hamperHeight*5-hamperLine*4) && a.y + 2 <= basehitY && (gameover = !0, enemyBullets[b] = null);
+            break;
+          case 3:
+            a.x >= basehitX && a.x <= (basehitX+hamperLength*3+1*hamperLine) && a.y + 1 >= (basehitY-hamperHeight*5-hamperLine*4) && a.y <= basehitY && (gameover = !0, enemyBullets[b] = null);
+            break;
+        }
+      }
+    }
+    if (null != hero1bullet) {
+      switch (hero1bullet.direct) {
+        case 0:
+          break;
+        case 1:
+          hero1bullet.x >= basehitX && hero1bullet.x <= (basehitX+hamperLength*3+1*hamperLine) && hero1bullet.y + 1 >= (basehitY-hamperHeight*5-hamperLine*4) && hero1bullet.y <= basehitY && (gameover = !0, window.clearInterval(hero1bullet.time), hero1bullet = null);
+          break;
+        case 2:
+          hero1bullet.x + 1 >= basehitX && hero1bullet.x <= (basehitX+hamperLength*3+1*hamperLine) && hero1bullet.y + 2 >= (basehitY-hamperHeight*5-hamperLine*4) && hero1bullet.y + 2 <= basehitY && (gameover = !0, window.clearInterval(hero1bullet.time), hero1bullet = null);
+          break;
+        case 3:
+          hero1bullet.x >= basehitX && hero1bullet.x <= (basehitX+hamperLength*3+1*hamperLine) && hero1bullet.y + 1 >= (basehitY-hamperHeight*5-hamperLine*4) && hero1bullet.y <= basehitY && (gameover = !0, window.clearInterval(hero1bullet.time), hero1bullet = null);
+          break;
+      }
+    }
+  }
+}
+function GameOver() {  //游戏结束函数
+  if (verygood) {
+    cxt.drawImage(winImg,canvasLength/3,canvasHeight/3,200,133);
+  } else{
+    if (gameover) {
+      cxt.drawImage(loseImg,canvasLength/3,canvasHeight/3,200,133);
+    }
+  }
+}
+
+
+
+function enemyBorn() {   //敌坦克出生函数
+    // console.log('enemyBorn work' +Date());
+    var b, c, a = 0;
+    for (b = 0; b < enemys.length; b++) null != enemys[b] && a++;  //第一次出生时，enemys是空数组，所以null != enemys[0] 是假，继续往下执行。
+    if (5 > a && enemys.length < 20) {
+        switch (c = null, enemy_loca) {  //enemy_loca初始值为1
+        case 1:
+            c = new Born(0, 0),
+            enemy_loca = 2;
+            break;
+        case 2:
+            c = new Born((canvasLength-tankWidth)/2, 0),
+            enemy_loca = 3;
+            break;
+        case 3:
+            c = new Born(canvasLength-tankWidth, 0),
+            enemy_loca = 1;
+            break;
+        default:
+            c = new Born(0, 0);
+        }
+        enemyborns.push(c); //向enemyborns数组末尾添加一个元素，并返回数组的新的长度
+    }
+    0 >= a && enemys.length >= 20 && (verygood = !0);
+}
+function moveEnemyTank() {
+  // console.log('fmoveEnemyTank work' +Date());
+  for (var a = 0; a < enemys.length; a++) {
+    null != enemys[a] && 0 != enemys[a].islive && (enemys[a].run(), enemys[a].attackEnemy(a));
+  }
+}
+function flashTankMap() {  //绘制地图与坦克
+  // console.log('flashTankMap work' +Date());
+  var a, b, c, d, e ;
+  for (cxt.clearRect(0, 0, canvasLength, canvasHeight), a = 0; a < hampers.length; a++) {
+    null != hampers[a] && hampers[a].Draw();
+  }
+  if (null != hero1born && heroLife != 0) {
+    if (hero1born.born) {
+      hero1born.drawBorn();
+    } else{
+      hero1 = new Hero(hero1born.x, hero1born.y, 2, 0, heroColor1, heroLife); 
+      hero1born = null;
+    }
+  }
+  if (null != hero1) {
+    if (0 != hero1.islive) {
+      DrawTank(hero1);
+    }
+  }
+  DrawBullet();
+  for (b = 0; b < enemyborns.length; b++){ 
+    if (null != enemyborns[b]){
+      if (enemyborns[b].born) {
+        enemyborns[b].drawBorn();
+      }else {
+        switch (c = null, Math.round(3 * Math.random())) {
+        case 0:
+          c = new Enemy(enemyborns[b].x, enemyborns[b].y, 3, 2, enemyColor1, 1);
+          break;
+        case 1:
+          c = new Enemy(enemyborns[b].x, enemyborns[b].y, 3, 2, enemyColor2, 1);
+          break;
+        case 2:
+          c = new Enemy(enemyborns[b].x, enemyborns[b].y, 3, 2, enemyColor3, 1);
+          break;
+        case 3:
+          c = new Enemy(enemyborns[b].x, enemyborns[b].y, 3, 2, enemyColor4, 1)
+        }
+      null != c && enemys.push(c),
+      enemyborns[b] = null
+      }
+    }
+  }
+  for (d = 0; d < enemys.length; d++) { //绘制每一个活着的敌坦克
+    null != enemys[d] && 0 != enemys[d].islive && DrawTank(enemys[d]);
+  }
+  for (b = 0; b < tankbombs.length; b++) {
+    if (tankbombs[b].isLive) {
+      tankbombs[b].drawBomb();
+    }
+  } 
+  for (e = 0; e < enemyBulletBombs.length; e++) {  //绘制敌坦克子弹的爆炸
+    null != enemyBulletBombs[e] && enemyBulletBombs[e].drawBomb(),enemyBulletBombs[e] = null;
+  }
+  if (null != hero1bulletBomb) {    //绘制英雄子弹爆炸
+    hero1bulletBomb.drawBomb();
+    hero1bulletBomb = null;
+  }
+  DrawSymbol();
+  hitBase();
+  GameOver();
+}
+function getCommand() {
+  if (null != hero1 && 0 != hero1.islive && !gameover) {   //如果hero1不等于null，hero1.islive==1,gameover是假，执行移动
+    var a = event.keyCode || event.which;
+    switch (a) {
+    case 87: //W键,前
+      87 == lastcode ? heroTankCollision() || hero1.moveUp() : (lastcode = 87, hero1.direct = 0);
+      break;
+    case 68: //D键，右
+      68 == lastcode ? heroTankCollision() || hero1.moveRight() : (lastcode = 68, hero1.direct = 1);
+      break;
+    case 83: //S键，后
+      83 == lastcode ? heroTankCollision() || hero1.moveDown() : (lastcode = 83, hero1.direct = 2);
+      break;
+    case 65: //A键，左
+      65 == lastcode ? heroTankCollision() || hero1.moveLeft() : (lastcode = 65, hero1.direct = 3);
+      break;
+    case 74: //J键，发射子弹
+      hero1.attackEnemy();
+      break;
+    case 66: //B键
+    }
+    flashTankMap();
+  }
+}
+function heroTankCollision() {   //英雄坦克碰撞检测函数
+  var b, c, d, a = null;
+  for (b = 0; b < enemys.length; b++) {
+    if (a = enemys[b], null != a && 0 != a.islive) {
+      switch (hero1.direct) {
+      case 0:
+        if (hero1.x > a.x - 50 && hero1.x < a.x + 50 && (hero1.y == a.y + 47 || hero1.y == a.y + 48 || hero1.y == a.y + 49 || hero1.y == a.y + 50)) return ! 0;
+        break;
+      case 1:
+        if (hero1.y > a.y - 50 && hero1.y < a.y + 50 && (hero1.x + 47 == a.x || hero1.x + 50 == a.x || hero1.x + 49 == a.x || hero1.x + 48 == a.x)) return ! 0;
+        break;
+      case 2:
+        if (hero1.x > a.x - 50 && hero1.x < a.x + 50 && (hero1.y + 47 == a.y || hero1.y + 50 == a.y || hero1.y + 49 == a.y || hero1.y + 48 == a.y)) return ! 0;
+        break;
+      case 3:
+        if (hero1.y > a.y - 50 && hero1.y < a.y + 50 && (hero1.x == a.x + 47 || hero1.x == a.x + 50 || hero1.x == a.x + 49 || hero1.x == a.x + 48)) return ! 0;
+        break;
+      }
+    }
+  }
+  for (c = null, d = 0; d < hampers.length; d++){ 
+    if (c = hampers[d], null != c){ 
+      switch (hampers[d].style) {
+      case 1:
+        switch (hero1.direct) {
+          case 0:
+            if (hero1.x > c.x - 50 && hero1.x < c.x + 17 && (hero1.y == c.y + 7 || hero1.y == c.y + 8 || hero1.y == c.y + 9 || hero1.y == c.y + 10)) return ! 0;
+            break;
+          case 1:
+            if (hero1.y > c.y - 50 && hero1.y < c.y + 10 && (hero1.x + 50 == c.x || hero1.x + 49 == c.x || hero1.x + 48 == c.x || hero1.x + 47 == c.x)) return ! 0;
+            break;
+          case 2:
+            if (hero1.x > c.x - 50 && hero1.x < c.x + 17 && (hero1.y + 50 == c.y || hero1.y + 49 == c.y || hero1.y + 48 == c.y || hero1.y + 47 == c.y)) return ! 0;
+            break;
+          case 3:
+            if (hero1.y > c.y - 50 && hero1.y < c.y + 10 && (hero1.x == c.x + 17 || hero1.x == c.x + 16 || hero1.x == c.x + 15 || hero1.x == c.x + 14)) return ! 0;
+            break;
+        }
+          break;
+      case 2:
+        switch (hero1.direct) {
+          case 0:
+            if (hero1.x >= c.x - 50 && hero1.x <= c.x + 17 && (hero1.y == c.y + 9 || hero1.y == c.y + 10 || hero1.y == c.y + 11 || hero1.y == c.y + 12)) return ! 0;
+            break;
+          case 1:
+            if (hero1.y > c.y - 50 && hero1.y < c.y + 10 && (hero1.x + 50 == c.x || hero1.x + 49 == c.x || hero1.x + 48 == c.x || hero1.x + 47 == c.x)) return ! 0;
+            break;
+          case 2:
+            if (hero1.x > c.x - 50 && hero1.x < c.x + 17 && (hero1.y + 50 == c.y || hero1.y + 49 == c.y || hero1.y + 48 == c.y || hero1.y + 47 == c.y)) return ! 0;
+            break;
+          case 3:
+            if (hero1.y > c.y - 50 && hero1.y < c.y + 10 && (hero1.x == c.x + 17 || hero1.x == c.x + 16 || hero1.x == c.x + 15 || hero1.x == c.x + 14)) return ! 0;
+            break;
+        }
+        break;
+      case 3:
+        break;
+      case 4:
+        break;
+      }
+    }
+  }
+}
+
+    </script>
+    
+</body>
+</html>
